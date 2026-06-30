@@ -1,18 +1,24 @@
-$CertThumbprint = "PASTE_CERT_THUMBPRINT_HERE"
+$DownloadUrl = "https://kaiseritgroup.com/downloads/unifi-blockpage.cer"
+$CertPath = Join-Path $env:TEMP "unifi-blockpage-test.cer"
 
-$CertThumbprint = $CertThumbprint.Replace(" ", "").ToUpper()
+Invoke-WebRequest -Uri $DownloadUrl -OutFile $CertPath -UseBasicParsing
 
-$cert = Get-ChildItem "Cert:\LocalMachine\Root" | Where-Object {
-    $_.Thumbprint -eq $CertThumbprint
+$Certificate = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($CertPath)
+$Thumbprint = $Certificate.Thumbprint.Replace(" ", "").ToUpper()
+
+$Existing = Get-ChildItem Cert:\LocalMachine\Root | Where-Object {
+    $_.Thumbprint.Replace(" ", "").ToUpper() -eq $Thumbprint
 }
 
-if ($cert) {
-    Write-Output "Certificate Is Installed."
-    Write-Output "Subject: $($cert.Subject)"
-    Write-Output "Thumbprint: $($cert.Thumbprint)"
+Remove-Item $CertPath -Force -ErrorAction SilentlyContinue
+
+if ($Existing) {
+    Write-Output "PASS: Certificate is installed."
+    Write-Output "Subject: $($Existing.Subject)"
+    Write-Output "Thumbprint: $($Existing.Thumbprint)"
     exit 0
 }
 else {
-    Write-Output "Certificate NOT Installed."
+    Write-Output "FAIL: Certificate is not installed."
     exit 1
 }
